@@ -6,28 +6,20 @@ on:
       - main
 
 jobs:
-  deploy:
+  install-nginx:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.AZURE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.AZURE_VM_PUBLIC_IP }} >> ~/.ssh/known_hosts
+    - name: install ssh client
+      run: sudo apt-get install -y sshpass
 
     - name: Install Nginx on Azure VM
       run: |
-        ssh -i ~/.ssh/id_rsa azureuser@${{ secrets.AZURE_VM_PUBLIC_IP }} << 'EOF'
+        sshpass -p "${{ secrets.AZURE_VM_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{secrets.AZURE_VM_USERNAME }}@${{ secrets.AZURE_VM_IP }} << 'EOF'
         sudo apt update && sudo apt install -y nginx
         sudo systemctl enable nginx
         sudo systemctl start nginx
+        sudo systemctl enable nginx
         EOF
 
-    - name: Verify Nginx status
-      run: |
-        ssh -i ~/.ssh/id_rsa azureuser@${{ secrets.AZURE_VM_PUBLIC_IP }} "systemctl status nginx --no-pager"
+    
